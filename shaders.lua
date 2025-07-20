@@ -1,7 +1,7 @@
 local surfacevertex =
 "layout(location=0) in highp vec4 xyz_chunk;"..
 "out highp vec4 vScreenPos;"..
-"out float chunk;"..
+"flat out float chunk;"..
 "layout(location=0) uniform vec4 xyoffset_xzscale_yscale;"..
 "layout(location=2) uniform highp mat4 viewproj;"..
 "void main() {"..
@@ -16,14 +16,19 @@ local surfacevertex =
 
 local surfacefragment =
 "in highp vec4 vScreenPos;"..
-"in float chunk;"..
+"flat in float chunk;"..
 "out highp vec4 col;"..
 "layout(location=1) uniform sampler2D depthTex;"..
+"layout(location=6) uniform sampler2D chunkTex;"..
 "void main() {"..
   "highp float sceneDepth = texture(depthTex, ((vScreenPos.st / vScreenPos.q) + vec2(1.0, 1.0)) / 2.0).r;"..
-  "float a = gl_FragCoord.p > sceneDepth ? 0.0 : 1.0;"..
-  "float rgb = 0.0;".. -- todo: should be 0 if `chunk` is locked, 1 if it's unlocked
-  "col = vec4(rgb, rgb, rgb, a);"..
+  "bool isOuterWall = chunk < -0.5;"..
+  "if (gl_FragCoord.p > sceneDepth && !isOuterWall) { discard; }"..
+  "float chunkRelX = (int(chunk) % 5);"..
+  "float chunkRelY = floor(chunk / 5.0);"..
+  "bool unlocked = isOuterWall ? true : (texture(chunkTex, vec2(chunkRelX / 8.0, chunkRelY / 8.0)).r > 0.5);"..
+  "float rgb = unlocked ? 1.0 : 0.0;"..
+  "col = vec4(rgb, rgb, rgb, 1.0);"..
 "}"
 
 local screenvertex =
@@ -40,8 +45,8 @@ local screenfragment =
 "layout(location=0) uniform sampler2D tex;"..
 "void main() {"..
   "highp vec4 texCol = texture(tex, vXY);"..
-  "highp float a = texCol.r > 0.5 ? 0.0 : 0.825;"..
-  "col = vec4(0.0, 0.0, 0.0, a);"..
+  "highp float a = texCol.r > 0.5 ? 0.0 : 0.7;"..
+  "col = vec4(0.0, 0.0, 0.0, a * texCol.a);"..
 "}"
 
 local compileprogram = function (bolt, vertex, fragment)

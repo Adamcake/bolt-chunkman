@@ -4,6 +4,13 @@ bolt.checkversion(1, 0)
 local shaders = require("shaders").get(bolt)
 local wallbuffer, wallvertexcount = require("walls").get(bolt)
 
+-- overworld region of the map (inclusive)
+-- only chunks inside this region are considered locked or unlocked
+local chunkminx = 31
+local chunkminy = 40
+local chunkmaxx = 59
+local chunkmaxy = 62
+
 local squarebuffer = bolt.createshaderbuffer("\x00\x00\x01\x00\x01\x01\x00\x00\x01\x01\x00\x01")
 
 local doupdatecam = true
@@ -23,6 +30,33 @@ bolt.onrender3d(updatecam)
 bolt.onrenderparticles(updatecam)
 bolt.onrenderbillboard(updatecam)
 
+local chunkstates = {}
+for x = chunkminx, chunkmaxx do
+  local xlist = {}
+  for y = chunkminy, chunkmaxy do
+    xlist[y] = false
+  end
+  chunkstates[x] = xlist
+end
+local chunkstatesurface = bolt.createsurface(8, 8) -- only actually use 5x5, but power of two eliminates GLSL sampling errors
+local updatechunkstatesurface = function (camx, camy)
+  for x = camx - 2, camx + 2 do
+    for y = camy - 2, camy + 2 do
+      local unlocked = true
+      if x >= chunkminx and x <= chunkmaxx and y >= chunkminy and y <= chunkmaxy then
+        unlocked = chunkstates[x][y]
+      end
+      local bytes = unlocked and "\xFF\xFF\xFF\xFF" or "\x00\x00\x00\xFF"
+      chunkstatesurface:subimage(x + 2 - camx, y + 2 - camy, 1, 1, bytes)
+    end
+  end
+end
+
+-- hard-coded unlocked chunks for testing
+chunkstates[48][51] = true
+chunkstates[49][51] = true
+chunkstates[49][52] = true
+
 bolt.onswapbuffers(function (event)
   doupdatecam = true
   viewproj = nil
@@ -30,6 +64,7 @@ end)
 
 local gvsurface = nil
 local surfacewidth, surfaceheight
+local lastchunkx, lastchunky
 
 bolt.onrendergameview(function (event)
   -- don't try to render anything if we don't know camera view details right now
@@ -51,12 +86,27 @@ bolt.onrendergameview(function (event)
   -- x and y, in chunk coordinates, of the chunk the camera is in
   local chunkx = math.floor(camx / chunksizeunits)
   local chunky = math.floor(camz / chunksizeunits)
+  
+  -- check if camera is in a different chunk than before
+  if chunkx ~= lastchunkx or chunky ~= lastchunky then
+    updatechunkstatesurface(chunkx, chunky)
+    lastchunkx = chunkx
+    lastchunky = chunky
+  end
+
+  -- determine if the chunk containing the camera is locked or unlocked
+  local unlocked = true
+  if chunkx >= chunkminx and chunkx <= chunkmaxx and chunky >= chunkminy and chunky <= chunkmaxy then
+    unlocked = chunkstates[chunkx][chunky]
+  end
 
   -- draw walls
-  gvsurface:clear(1, 1, 1, 1) -- todo: make this opaque black if the chunk with the camera in it is locked, opaque white if it's unlocked
+  local clearrgb = unlocked and 1 or 0
+  gvsurface:clear(clearrgb, clearrgb, clearrgb, 1)
   shaders.surfaceprogram:setuniform4f(0, chunkx * chunksizeunits, chunky * chunksizeunits, chunksizeunits, ylimit)
   shaders.surfaceprogram:setuniformdepthbuffer(event, 1)
   shaders.surfaceprogram:setuniformmatrix4f(2, false, viewproj:get())
+  shaders.surfaceprogram:setuniformsurface(6, chunkstatesurface)
   shaders.surfaceprogram:drawtosurface(gvsurface, wallbuffer, wallvertexcount)
 
   -- draw gvsurface to game view
