@@ -1,0 +1,6 @@
+{
+  "main": "main.lua",
+  "name": "Chunkman",
+  "version": "0.1",
+  "description": "Shows chunk boundaries and greys out locked chunks"
+}
