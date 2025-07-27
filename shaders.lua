@@ -48,9 +48,13 @@ local screenfragment =
 "in highp vec2 vXY;"..
 "out highp vec4 col;"..
 "layout(location=0) uniform sampler2D tex;"..
+"layout(location=1) uniform sampler2D depthTex;"..
 "void main() {"..
+  "highp float lockedAlpha = 0.7;"..
+  "highp float sceneDepth = texture(depthTex, vXY).r;"..
   "highp vec4 texCol = texture(tex, vXY);"..
-  "highp float a = texCol.r > 0.5 ? 0.0 : 0.7;"..
+  "highp float depthModifier = 1.0 - smoothstep(0.99999, 1.0, sceneDepth);"..
+  "highp float a = step(texCol.r, 0.5) * lockedAlpha * depthModifier;"..
   "col = vec4(0.0, 0.0, 0.0, a);"..
 "}"
 

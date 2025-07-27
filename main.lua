@@ -116,5 +116,6 @@ bolt.onrendergameview(function (event)
   shaders.surfaceprogram:drawtosurface(gvsurface, wallbuffer, wallvertexcount)
 
   -- draw gvsurface to game view
+  shaders.screenprogram:setuniformdepthbuffer(event, 1)
   shaders.screenprogram:drawtogameview(event, squarebuffer, 6)
 end)
