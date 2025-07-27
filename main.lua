@@ -15,7 +15,8 @@ local squarebuffer = bolt.createshaderbuffer("\x00\x00\x01\x00\x01\x01\x00\x00\x
 
 local doupdatecam = true
 local camx, camz
-local viewproj = nil
+local viewmat = nil
+local projmat = nil
 
 local chunksizeunits = 64 * 512
 local ylimit = 256 * 256 * 4
@@ -23,7 +24,8 @@ local ylimit = 256 * 256 * 4
 local updatecam = function (event)
   if not doupdatecam then return end
   camx, _, camz = event:cameraposition()
-  viewproj = event:viewprojmatrix()
+  viewmat = event:viewmatrix()
+  projmat = event:projmatrix()
   doupdatecam = false
 end
 bolt.onrender3d(updatecam)
@@ -53,13 +55,14 @@ local updatechunkstatesurface = function (camx, camy)
 end
 
 -- hard-coded unlocked chunks for testing
-chunkstates[48][51] = true
-chunkstates[49][51] = true
-chunkstates[49][52] = true
+chunkstates[37][48] = true
+chunkstates[38][49] = true
+chunkstates[36][48] = true
 
 bolt.onswapbuffers(function (event)
   doupdatecam = true
-  viewproj = nil
+  viewmat = nil
+  projmat = nil
 end)
 
 local gvsurface = nil
@@ -68,7 +71,7 @@ local lastchunkx, lastchunky
 
 bolt.onrendergameview(function (event)
   -- don't try to render anything if we don't know camera view details right now
-  if not viewproj then return end
+  if not viewmat or not projmat then return end
 
   -- make sure our surface exists and is the same size as the game view
   local gvw, gvh = event:size()
@@ -105,8 +108,9 @@ bolt.onrendergameview(function (event)
   gvsurface:clear(clearrgb, clearrgb, clearrgb, 1)
   shaders.surfaceprogram:setuniform4f(0, chunkx * chunksizeunits, chunky * chunksizeunits, chunksizeunits, ylimit)
   shaders.surfaceprogram:setuniformdepthbuffer(event, 1)
-  shaders.surfaceprogram:setuniformmatrix4f(2, false, viewproj:get())
-  shaders.surfaceprogram:setuniformsurface(6, chunkstatesurface)
+  shaders.surfaceprogram:setuniformmatrix4f(2, false, viewmat:get())
+  shaders.surfaceprogram:setuniformmatrix4f(6, false, projmat:get())
+  shaders.surfaceprogram:setuniformsurface(10, chunkstatesurface)
   shaders.surfaceprogram:drawtosurface(gvsurface, wallbuffer, wallvertexcount)
 
   -- draw gvsurface to game view
