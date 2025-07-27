@@ -40,16 +40,23 @@ for x = chunkminx, chunkmaxx do
   end
   chunkstates[x] = xlist
 end
-local chunkstatesurface = bolt.createsurface(8, 8) -- only actually use 5x5, but power of two eliminates GLSL sampling errors
+local chunkstatesize = 8
+local chunkstateoffset = chunkstatesize / 2
+local chunkstatesurface = bolt.createsurface(chunkstatesize, chunkstatesize)
+shaders.surfaceprogram:setuniformsurface(10, chunkstatesurface)
+shaders.surfaceprogram:setuniform4i(11, chunkstateoffset, chunkstateoffset, chunkstatesize, chunkstatesize)
 local updatechunkstatesurface = function (camx, camy)
-  for x = camx - 2, camx + 2 do
-    for y = camy - 2, camy + 2 do
+  local limit = chunkstatesize - 1
+  for pixelx = 0, limit do
+    for pixely = 0, limit do
+      local chunkx = camx + pixelx - chunkstateoffset
+      local chunky = camy + pixely - chunkstateoffset
       local unlocked = true
-      if x >= chunkminx and x <= chunkmaxx and y >= chunkminy and y <= chunkmaxy then
-        unlocked = chunkstates[x][y]
+      if chunkx >= chunkminx and chunkx <= chunkmaxx and chunky >= chunkminy and chunky <= chunkmaxy then
+        unlocked = chunkstates[chunkx][chunky]
       end
       local bytes = unlocked and "\xFF\xFF\xFF\xFF" or "\x00\x00\x00\xFF"
-      chunkstatesurface:subimage(x + 2 - camx, y + 2 - camy, 1, 1, bytes)
+      chunkstatesurface:subimage(pixelx, pixely, 1, 1, bytes)
     end
   end
 end
@@ -82,10 +89,6 @@ bolt.onrendergameview(function (event)
     shaders.screenprogram:setuniformsurface(0, gvsurface)
   end
   
-  -- camera's x and y, in units, relative to the chunk it's currently in
-  --local camerachunkx = camx % chunksizeunits
-  --local camerachunky = camz % chunksizeunits
-
   -- x and y, in chunk coordinates, of the chunk the camera is in
   local chunkx = math.floor(camx / chunksizeunits)
   local chunky = math.floor(camz / chunksizeunits)
@@ -110,10 +113,8 @@ bolt.onrendergameview(function (event)
   shaders.surfaceprogram:setuniformdepthbuffer(event, 1)
   shaders.surfaceprogram:setuniformmatrix4f(2, false, viewmat:get())
   shaders.surfaceprogram:setuniformmatrix4f(6, false, projmat:get())
-  shaders.surfaceprogram:setuniformsurface(10, chunkstatesurface)
   shaders.surfaceprogram:drawtosurface(gvsurface, wallbuffer, wallvertexcount)
 
   -- draw gvsurface to game view
-  shaders.screenprogram:setuniformsurface(0, gvsurface)
   shaders.screenprogram:drawtogameview(event, squarebuffer, 6)
 end)
