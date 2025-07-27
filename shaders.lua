@@ -49,13 +49,12 @@ local screenfragment =
 "out highp vec4 col;"..
 "layout(location=0) uniform sampler2D tex;"..
 "layout(location=1) uniform sampler2D depthTex;"..
+"layout(location=2) uniform vec4 lockedCol;"..
 "void main() {"..
-  "highp float lockedAlpha = 0.7;"..
   "highp float sceneDepth = texture(depthTex, vXY).r;"..
   "highp vec4 texCol = texture(tex, vXY);"..
   "highp float depthModifier = 1.0 - smoothstep(0.998 * (gl_DepthRange.far - gl_DepthRange.near), gl_DepthRange.far, sceneDepth);"..
-  "highp float a = step(texCol.r, 0.5) * lockedAlpha * depthModifier;"..
-  "col = vec4(0.0, 0.0, 0.0, a);"..
+  "col = vec4(lockedCol.stp, lockedCol.q * step(texCol.r, 0.5) * depthModifier);"..
 "}"
 
 local compileprogram = function (bolt, vertex, fragment)

@@ -11,6 +11,9 @@ local chunkminy = 40
 local chunkmaxx = 59
 local chunkmaxy = 62
 
+local lockedchunkalpha = 0.7
+shaders.screenprogram:setuniform4f(2, 0, 0, 0, lockedchunkalpha)
+
 local squarebuffer = bolt.createshaderbuffer("\x00\x00\x01\x00\x01\x01\x00\x00\x01\x01\x00\x01")
 
 local doupdatecam = true
