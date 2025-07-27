@@ -17,7 +17,7 @@ local surfacevertex =
   "vScreenPos = vPos;"..
   "vFragDepth = (vPos.p / vPos.q) * 0.5 + 0.5;"..
   "vChunk = xyOpposite_chunkXY.pq;"..
-  "gl_Position = vec4(vPos.xy, isInFrontOfCamera ? vPos.q : vPos.z, vPos.q);"..
+  "gl_Position = vec4(vPos.xy, isInFrontOfCamera ? (vPos.q * gl_DepthRange.far) : vPos.z, vPos.q);"..
 "}"
 
 local surfacefragment =
@@ -53,7 +53,7 @@ local screenfragment =
   "highp float lockedAlpha = 0.7;"..
   "highp float sceneDepth = texture(depthTex, vXY).r;"..
   "highp vec4 texCol = texture(tex, vXY);"..
-  "highp float depthModifier = 1.0 - smoothstep(0.99999, 1.0, sceneDepth);"..
+  "highp float depthModifier = 1.0 - smoothstep(0.998 * (gl_DepthRange.far - gl_DepthRange.near), gl_DepthRange.far, sceneDepth);"..
   "highp float a = step(texCol.r, 0.5) * lockedAlpha * depthModifier;"..
   "col = vec4(0.0, 0.0, 0.0, a);"..
 "}"
