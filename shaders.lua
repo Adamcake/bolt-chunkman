@@ -1,6 +1,6 @@
 local surfacevertex =
 "layout(location=0) in highp vec3 xyz;"..
-"layout(location=1) in highp vec4 xyOpposite_chunkXY;"..
+"layout(location=1) in highp vec2 chunkXY;"..
 "out highp vec4 vScreenPos;"..
 "noperspective out highp float vFragDepth;"..
 "flat out vec2 vChunk;"..
@@ -16,7 +16,7 @@ local surfacevertex =
   "bool isInFrontOfCamera = vEyePos.z >= 0.0;"..
   "vScreenPos = vPos;"..
   "vFragDepth = (vPos.p / vPos.q) * 0.5 + 0.5;"..
-  "vChunk = xyOpposite_chunkXY.pq;"..
+  "vChunk = chunkXY;"..
   "gl_Position = vec4(vPos.xy, isInFrontOfCamera ? (vPos.q * gl_DepthRange.far) : vPos.z, vPos.q);"..
 "}"
 
@@ -66,8 +66,8 @@ end
 return {
   get = function (bolt)
     local surfaceprogram = compileprogram(bolt, surfacevertex, surfacefragment)
-    surfaceprogram:setattribute(0, 1, true, false, 3, 0, 7)
-    surfaceprogram:setattribute(1, 1, true, false, 4, 3, 7)
+    surfaceprogram:setattribute(0, 1, true, false, 3, 0, 5)
+    surfaceprogram:setattribute(1, 1, true, false, 2, 3, 5)
 
     local screenprogram = compileprogram(bolt, screenvertex, screenfragment)
     screenprogram:setattribute(0, 1, true, false, 2, 0, 2)
