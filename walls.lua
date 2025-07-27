@@ -117,7 +117,7 @@ local list = {
 -- builds a list of vertex coordinates from the list of walls above
 local makebuffer = function (bolt)
   local vertexcount = #list * 6
-  local buffer = bolt.createbuffer(vertexcount * 7)
+  local buffer = bolt.createbuffer(vertexcount * 5)
   local cursor = 0
 
   local set = function (val)
