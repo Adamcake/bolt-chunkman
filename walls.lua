@@ -115,7 +115,7 @@ local list = {
 }
 
 -- builds a list of vertex coordinates from the list of walls above
-local makebuffer = function (bolt)
+local makebuffer = function (bolt, list)
   local vertexcount = #list * 6
   local buffer = bolt.createbuffer(vertexcount * 5)
   local cursor = 0
@@ -166,4 +166,24 @@ local makebuffer = function (bolt)
   return bolt.createshaderbuffer(buffer), vertexcount
 end
 
-return { get = makebuffer }
+return {
+  -- returns three shaderbuffers and the associated vertexcount of each one.
+  -- should be drawn in this order. ones with pyramid=true should be drawn using the
+  -- pyramid shader, others should be drawn using the surface shader.
+  get = function (bolt)
+    local buf1, vc1 = makebuffer(bolt, list)
+    
+    local buf2 = bolt.createshaderbuffer(
+      "\x00\xFF\x00\x00\xFF\x00\x00\x00\x00\x00\x01\x00"..
+      "\xFF\x00\x00\x00\x00\x01\x00\x00\x00\x00\x01\x00"..
+      "\x00\x01\x00\x01\x01\x00\x00\x01\x00\x00\x01\x01"..
+      "\x01\x00\x00\x01\x00\xFF\x00\x01\x00\x00\x01\x01"
+    )
+    local vc2 = 12
+
+    return {
+      { buf = buf2, vertexcount = vc2, pyramid = true },
+      { buf = buf1, vertexcount = vc1, pyramid = false },
+    }
+  end,
+}
