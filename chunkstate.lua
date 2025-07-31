@@ -256,6 +256,7 @@ local load = function (bolt)
       [61] = false,
     },
     [47] = {
+      [41] = false,
       [55] = false,
       [49] = false,
       [51] = false,
