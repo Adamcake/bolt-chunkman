@@ -218,7 +218,17 @@ bolt.onrender2d(function (event)
       if details and not isunlocked(details.x, details.y) then
         local x2, y2 = event:vertexxy(i)
         local x1, y1 = event:vertexxy(i + 2)
-        drawtile(x1, y1, x2, y2, details)
+        local u2, v2 = event:vertexuv(i)
+        local u1, v1 = event:vertexuv(i + 2)
+        if u1 ~= nil and u2 ~= nil and v1 ~= nil and v2 ~= nil then
+          print(string.format("chunk=%s,%s uv1=%s,%s uv2=%s,%s", details.x, details.y, u1, v1, u2, v2))
+          local atlaswidth, atlasheight = event:texturesize()
+          u1 = math.floor(u1 * atlaswidth - ax)
+          u2 = math.floor(u2 * atlaswidth - ax)
+          v1 = math.floor(v1 * atlasheight - ay)
+          v2 = math.floor(v2 * atlasheight - ay)
+          drawtile(x1 - u1, y1 - v1, x2 + aw - u2, y2 + ah - v2, details)
+        end
       end
     end
   end
