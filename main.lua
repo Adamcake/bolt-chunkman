@@ -3,13 +3,8 @@ bolt.checkversion(1, 0)
 
 local shaders = require("shaders").get(bolt)
 local buffers = require("walls").get(bolt)
-
--- overworld region of the map (inclusive)
--- only chunks inside this region are considered locked or unlocked
-local chunkminx = 31
-local chunkminy = 40
-local chunkmaxx = 59
-local chunkmaxy = 62
+local map = require("map")
+local chunkstate = require("chunkstate").get(bolt)
 
 local lockedchunkalpha = 0.7
 shaders.screenprogram:setuniform4f(2, 0, 0, 0, lockedchunkalpha)
@@ -33,14 +28,7 @@ bolt.onrender3d(updatecam)
 bolt.onrenderparticles(updatecam)
 bolt.onrenderbillboard(updatecam)
 
-local chunkstates = {}
-for x = chunkminx, chunkmaxx do
-  local xlist = {}
-  for y = chunkminy, chunkmaxy do
-    xlist[y] = false
-  end
-  chunkstates[x] = xlist
-end
+local chunkstates = chunkstate.load()
 local chunkstatesize = 8
 local chunkstateoffset = chunkstatesize / 2
 local chunkstatesurface = bolt.createsurface(chunkstatesize, chunkstatesize)
@@ -48,33 +36,30 @@ shaders.surfaceprogram:setuniformsurface(10, chunkstatesurface)
 shaders.surfaceprogram:setuniform4i(11, chunkstateoffset, chunkstateoffset, chunkstatesize, chunkstatesize)
 shaders.pyramidprogram:setuniformsurface(10, chunkstatesurface)
 shaders.pyramidprogram:setuniform4i(11, chunkstateoffset, chunkstateoffset, chunkstatesize, chunkstatesize)
+
+-- check if chunk (x,y) is unlocked
+local isunlocked = function (x, y)
+  local ylist = chunkstates[x]
+  if ylist ~= nil then
+    local val = ylist[y]
+    if val ~= nil then return val end
+  end
+  return true
+end
+
+-- updates all the pixels on chunkstatesurface to either black or white depending on the unlock state of nearby chunks
 local updatechunkstatesurface = function (camx, camy)
   local limit = chunkstatesize - 1
   for pixelx = 0, limit do
     for pixely = 0, limit do
       local chunkx = camx + pixelx - chunkstateoffset
       local chunky = camy + pixely - chunkstateoffset
-      local unlocked = true
-      if chunkx >= chunkminx and chunkx <= chunkmaxx and chunky >= chunkminy and chunky <= chunkmaxy then
-        unlocked = chunkstates[chunkx][chunky]
-      end
+      local unlocked = isunlocked(chunkx, chunky)
       local bytes = unlocked and "\xFF\xFF\xFF\xFF" or "\x00\x00\x00\xFF"
       chunkstatesurface:subimage(pixelx, pixely, 1, 1, bytes)
     end
   end
 end
-
-local smoothstep = function (min, max, x)
-  if x <= min then return min end
-  if x >= max then return max end
-  local t = (x - min) / (max - min)
-  return t * t * (3.0 - (2.0 * t))
-end
-
--- hard-coded unlocked chunks for testing
-chunkstates[37][48] = true
-chunkstates[38][49] = true
-chunkstates[36][48] = true
 
 bolt.onswapbuffers(function (event)
   doupdatecam = true
@@ -116,10 +101,7 @@ bolt.onrendergameview(function (event)
   end
 
   -- determine if the chunk containing the camera is locked or unlocked
-  local unlocked = true
-  if chunkx >= chunkminx and chunkx <= chunkmaxx and chunky >= chunkminy and chunky <= chunkmaxy then
-    unlocked = chunkstates[chunkx][chunky]
-  end
+  local unlocked = isunlocked(chunkx, chunky)
 
   -- set shader uniforms
   local chunkxunits = chunkx * chunksizeunits
@@ -171,4 +153,41 @@ bolt.onrendergameview(function (event)
   -- draw gvsurface to game view
   shaders.screenprogram:setuniformdepthbuffer(event, 1)
   shaders.screenprogram:drawtogameview(event, squarebuffer, 6)
+end)
+
+-- key is atlas size (width and height most both equal this number),
+-- value is a list of pixel rows to try to index map table with, using bolt.texturedata(), until finding a match
+local mappixelrows = {[32] = {4, 8, 16, 31}, [64] = {8, 16, 32, 63}, [128] = {16, 32, 64, 127}, [256] = {32, 64, 128, 255}, [512] = {64, 128, 256, 511}}
+
+local whitepixel = bolt.createsurfacefromrgba(1, 1, "\xFF\xFF\xFF\xFF")
+whitepixel:settint(0, 0, 0)
+bolt.onrender2d(function (event)
+  for i = 1, event:vertexcount(), event:verticesperimage() do
+    local ax, ay, aw, ah, _, _ = event:vertexatlasdetails(i)
+    local pxrows = mappixelrows[aw]
+    if aw == ah and pxrows ~= nil then
+      local details = nil
+      for _, row in ipairs(pxrows) do
+        local d = map[event:texturedata(ax, ay + row, aw * 4)]
+        if d ~= nil then
+          details = d
+          break
+        end
+      end
+
+      if details and not isunlocked(details.x, details.y) then
+        local x1, y1 = event:vertexxy(i)
+        local x2, y2 = event:vertexxy(i + 2)
+        local w = x2 - x1
+        local h = y2 - y1
+        whitepixel:setalpha(0.5)
+        whitepixel:drawtoscreen(0, 0, 1, 1, x1, y1, x2 - x1, y2 - y1)
+        whitepixel:setalpha(1)
+        whitepixel:drawtoscreen(0, 0, 1, 1, x1, y1, w, 1)
+        whitepixel:drawtoscreen(0, 0, 1, 1, x1, y1, 1, h)
+        whitepixel:drawtoscreen(0, 0, 1, 1, x1, y2 - 1, w, 1)
+        whitepixel:drawtoscreen(0, 0, 1, 1, x2 - 1, y1, 1, h)
+      end
+    end
+  end
 end)
