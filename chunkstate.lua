@@ -16,6 +16,12 @@ local load = function (bolt)
       [87] = false,
       [88] = false,
     },
+    [29] = {
+      [49] = false,
+    },
+    [31] = {
+      [59] = false,
+    },
     [32] = {
       [61] = false,
       [60] = false,
@@ -38,6 +44,7 @@ local load = function (bolt)
       [49] = false,
       [58] = false,
       [57] = false,
+      [59] = false,
     },
     [35] = {
       [55] = false,
@@ -64,6 +71,8 @@ local load = function (bolt)
       [59] = false,
       [52] = false,
       [57] = false,
+      [62] = false,
+      [63] = false,
     },
     [37] = {
       [55] = false,
@@ -95,6 +104,8 @@ local load = function (bolt)
       [55] = false,
       [49] = false,
       [47] = false,
+      [62] = false,
+      [63] = false,
     },
     [39] = {
       [55] = false,
@@ -112,6 +123,8 @@ local load = function (bolt)
       [51] = false,
       [44] = false,
       [45] = false,
+      [62] = false,
+      [63] = false,
     },
     [40] = {
       [53] = false,
@@ -131,6 +144,7 @@ local load = function (bolt)
       [57] = false,
     },
     [41] = {
+      [41] = false,
       [55] = false,
       [49] = false,
       [53] = false,
@@ -143,6 +157,8 @@ local load = function (bolt)
       [52] = false,
       [51] = false,
       [57] = false,
+      [62] = false,
+      [63] = false,
     },
     [42] = {
       [53] = false,
@@ -159,6 +175,7 @@ local load = function (bolt)
       [42] = false,
       [52] = false,
       [57] = false,
+      [62] = false,
     },
     [43] = {
       [42] = false,
@@ -169,6 +186,7 @@ local load = function (bolt)
       [48] = false,
       [49] = false,
       [50] = false,
+      [51] = false,
       [52] = false,
       [53] = false,
       [54] = false,
@@ -199,6 +217,7 @@ local load = function (bolt)
       [61] = false,
     },
     [45] = {
+      [42] = false,
       [45] = false,
       [46] = false,
       [47] = false,
@@ -252,6 +271,7 @@ local load = function (bolt)
       [59] = false,
       [61] = false,
       [57] = false,
+      [46] = false,
     },
     [48] = {
       [41] = false,
