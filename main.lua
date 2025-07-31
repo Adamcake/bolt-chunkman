@@ -221,7 +221,6 @@ bolt.onrender2d(function (event)
         local u2, v2 = event:vertexuv(i)
         local u1, v1 = event:vertexuv(i + 2)
         if u1 ~= nil and u2 ~= nil and v1 ~= nil and v2 ~= nil then
-          print(string.format("chunk=%s,%s uv1=%s,%s uv2=%s,%s", details.x, details.y, u1, v1, u2, v2))
           local atlaswidth, atlasheight = event:texturesize()
           u1 = math.floor(u1 * atlaswidth - ax)
           u2 = math.floor(u2 * atlaswidth - ax)
