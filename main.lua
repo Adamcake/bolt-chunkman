@@ -161,6 +161,46 @@ local mappixelrows = {[32] = {4, 8, 16, 31}, [64] = {8, 16, 32, 63}, [128] = {16
 
 local whitepixel = bolt.createsurfacefromrgba(1, 1, "\xFF\xFF\xFF\xFF")
 whitepixel:settint(0, 0, 0)
+local digits, _, digitheight = bolt.createsurfacefrompng("digits")
+local digitwidth = 16
+local byte0 = string.byte('0')
+
+-- draws overlay on top of a locked chunk
+local drawtile = function (x1, y1, x2, y2, details)
+  local w = x2 - x1
+  local h = y2 - y1
+  whitepixel:setalpha(0.5)
+  whitepixel:drawtoscreen(0, 0, 1, 1, x1, y1, x2 - x1, y2 - y1)
+  whitepixel:setalpha(1)
+  whitepixel:drawtoscreen(0, 0, 1, 1, x1, y1, w, 1)
+  whitepixel:drawtoscreen(0, 0, 1, 1, x1, y1, 1, h)
+  whitepixel:drawtoscreen(0, 0, 1, 1, x1, y2 - 1, w, 1)
+  whitepixel:drawtoscreen(0, 0, 1, 1, x2 - 1, y1, 1, h)
+
+  local drawscale = 1
+  digits:setalpha(1)
+  if w < 100 then
+    drawscale = 0.6
+    digits:setalpha(0.75)
+  end
+  if h > (digitheight * drawscale) then
+    local str = string.format("%s %s", details.x, details.y)
+    if #str * digitwidth * drawscale < w then
+      local drawx = x1
+      local drawy = y2 - (digitheight * drawscale)
+      for c in string.gmatch(str, '.') do
+        local d = string.byte(c) - byte0
+        if d < 0 or d > 9 then
+          drawx = drawx + (math.floor(digitwidth / 2) * drawscale)
+        else
+          digits:drawtoscreen(d * digitwidth, 0, digitwidth, digitheight, drawx, drawy, digitwidth * drawscale, digitheight * drawscale)
+          drawx = drawx + (digitwidth * drawscale)
+        end
+      end
+    end
+  end
+end
+
 bolt.onrender2d(function (event)
   for i = 1, event:vertexcount(), event:verticesperimage() do
     local ax, ay, aw, ah, _, _ = event:vertexatlasdetails(i)
@@ -176,17 +216,9 @@ bolt.onrender2d(function (event)
       end
 
       if details and not isunlocked(details.x, details.y) then
-        local x1, y1 = event:vertexxy(i)
-        local x2, y2 = event:vertexxy(i + 2)
-        local w = x2 - x1
-        local h = y2 - y1
-        whitepixel:setalpha(0.5)
-        whitepixel:drawtoscreen(0, 0, 1, 1, x1, y1, x2 - x1, y2 - y1)
-        whitepixel:setalpha(1)
-        whitepixel:drawtoscreen(0, 0, 1, 1, x1, y1, w, 1)
-        whitepixel:drawtoscreen(0, 0, 1, 1, x1, y1, 1, h)
-        whitepixel:drawtoscreen(0, 0, 1, 1, x1, y2 - 1, w, 1)
-        whitepixel:drawtoscreen(0, 0, 1, 1, x2 - 1, y1, 1, h)
+        local x2, y2 = event:vertexxy(i)
+        local x1, y1 = event:vertexxy(i + 2)
+        drawtile(x1, y1, x2, y2, details)
       end
     end
   end
